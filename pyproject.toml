@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "v2i"
+version = "0.1.0"
+description = "Convert videos/GIFs to images for LLM prompts - clipboard-first workflow"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+authors = [
+    { name = "v2i contributors" }
+]
+keywords = ["video", "gif", "images", "llm", "clipboard", "claude"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Video :: Conversion",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "Pillow>=9.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+v2i = "v2i.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/video-to-context/v2i"
+Repository = "https://github.com/video-to-context/v2i"
+
+[tool.hatch.build.targets.wheel]
+packages = ["v2i"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]

@@ -9,6 +9,20 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 # Clipboard content types
+
+
+def _escape_applescript_string(s: str) -> str:
+    """Escape a string for use in AppleScript."""
+    # Escape backslashes first, then double quotes
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _escape_powershell_string(s: str) -> str:
+    """Escape a string for use in PowerShell double-quoted strings."""
+    # Escape backticks, double quotes, and dollar signs
+    return s.replace("`", "``").replace('"', '`"').replace("$", "`$")
+
+
 CLIPBOARD_IMAGE = "image"
 CLIPBOARD_GIF = "gif"
 CLIPBOARD_FILE = "file"
@@ -130,11 +144,13 @@ def _macos_get_file_path() -> Optional[str]:
 
 def _macos_save_clipboard_image(output_path: str, as_gif: bool = False) -> bool:
     """Save clipboard image/GIF to file on macOS."""
+    safe_path = _escape_applescript_string(output_path)
+
     if as_gif:
         # Try to get GIF data
         script = f"""
         set gifData to the clipboard as «class GIFf»
-        set outFile to open for access POSIX file "{output_path}" with write permission
+        set outFile to open for access POSIX file "{safe_path}" with write permission
         write gifData to outFile
         close access outFile
         """
@@ -151,7 +167,7 @@ def _macos_save_clipboard_image(output_path: str, as_gif: bool = False) -> bool:
     # Fallback to osascript for PNG
     script = f"""
     set pngData to the clipboard as «class PNGf»
-    set outFile to open for access POSIX file "{output_path}" with write permission
+    set outFile to open for access POSIX file "{safe_path}" with write permission
     write pngData to outFile
     close access outFile
     """
@@ -324,12 +340,13 @@ def _windows_get_file_path() -> Optional[str]:
 
 def _windows_save_clipboard_image(output_path: str, as_gif: bool = False) -> bool:
     """Save clipboard image to file on Windows."""
+    safe_path = _escape_powershell_string(output_path)
     # GIF from clipboard on Windows is tricky - usually comes as file
     script = f"""
     Add-Type -AssemblyName System.Windows.Forms
     $img = [System.Windows.Forms.Clipboard]::GetImage()
     if ($img -ne $null) {{
-        $img.Save("{output_path}")
+        $img.Save("{safe_path}")
         Write-Output "saved"
     }}
     """

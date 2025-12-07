@@ -11,6 +11,9 @@ from typing import List, Optional, Tuple
 
 from PIL import Image
 
+# Maximum frames to count in a GIF to prevent infinite loops on malformed files
+MAX_GIF_FRAMES = 10000
+
 
 @dataclass
 class MediaInfo:
@@ -90,11 +93,11 @@ def get_media_info(path: str) -> Optional[MediaInfo]:
             fmt = img.format.lower() if img.format else "unknown"
 
             if fmt == "gif":
-                # Count GIF frames
+                # Count GIF frames with safety limit
                 frame_count = 0
                 total_duration = 0
                 try:
-                    while True:
+                    while frame_count < MAX_GIF_FRAMES:
                         frame_count += 1
                         # Get frame duration (in milliseconds)
                         duration = img.info.get("duration", 100)
@@ -202,10 +205,10 @@ def extract_frames_gif(
     output_paths = []
 
     with Image.open(gif_path) as img:
-        # Count total frames
+        # Count total frames with safety limit
         total_frames = 0
         try:
-            while True:
+            while total_frames < MAX_GIF_FRAMES:
                 total_frames += 1
                 img.seek(img.tell() + 1)
         except EOFError:
@@ -376,25 +379,34 @@ def extract_frames(
     return paths, info
 
 
-def download_url(url: str, output_dir: Optional[str] = None) -> str:
+def download_url(url: str, output_dir: Optional[str] = None, timeout: int = 60) -> str:
     """
     Download a video/GIF from URL.
 
     Args:
         url: URL to download
         output_dir: Where to save (uses temp dir if None)
+        timeout: Download timeout in seconds
 
     Returns:
         Path to downloaded file
+
+    Raises:
+        ValueError: If URL scheme is not http or https
+        RuntimeError: If download fails
     """
     import urllib.request
     from urllib.parse import urlparse
+
+    # Validate URL scheme
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Invalid URL scheme: {parsed.scheme}. Only http and https are allowed.")
 
     if output_dir is None:
         output_dir = tempfile.mkdtemp(prefix="v2i_download_")
 
     # Determine filename from URL
-    parsed = urlparse(url)
     filename = os.path.basename(parsed.path) or "download"
 
     # Add extension if missing
@@ -404,9 +416,11 @@ def download_url(url: str, output_dir: Optional[str] = None) -> str:
 
     output_path = os.path.join(output_dir, filename)
 
-    # Download
+    # Download with timeout
     try:
-        urllib.request.urlretrieve(url, output_path)
+        with urllib.request.urlopen(url, timeout=timeout) as response:
+            with open(output_path, "wb") as f:
+                f.write(response.read())
     except Exception as e:
         raise RuntimeError(f"Failed to download {url}: {e}")
 

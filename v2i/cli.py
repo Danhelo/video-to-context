@@ -76,6 +76,41 @@ def bold(text: str) -> str:
     return style(text, "1")
 
 
+def validate_quality(value: str) -> int:
+    """Validate quality argument is between 1 and 100."""
+    try:
+        ivalue = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"invalid int value: '{value}'")
+    if ivalue < 1 or ivalue > 100:
+        raise argparse.ArgumentTypeError(f"quality must be between 1 and 100, got {ivalue}")
+    return ivalue
+
+
+def validate_max_size(value: str) -> int:
+    """Validate max-size argument is positive and reasonable."""
+    try:
+        ivalue = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"invalid int value: '{value}'")
+    if ivalue < 16:
+        raise argparse.ArgumentTypeError(f"max-size must be at least 16 pixels, got {ivalue}")
+    if ivalue > 16384:
+        raise argparse.ArgumentTypeError(f"max-size must be at most 16384 pixels, got {ivalue}")
+    return ivalue
+
+
+def validate_frames(value: str) -> int:
+    """Validate frames argument is positive."""
+    try:
+        ivalue = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"invalid int value: '{value}'")
+    if ivalue < 1:
+        raise argparse.ArgumentTypeError(f"frames must be at least 1, got {ivalue}")
+    return ivalue
+
+
 def print_error(msg: str) -> None:
     """Print error message."""
     print(f"{style('Error:', '31;1')} {msg}", file=sys.stderr)
@@ -169,7 +204,7 @@ Tip: Copy a GIF, run 'v2i', then drag frames into Claude Code!
     parser.add_argument(
         "-n",
         "--frames",
-        type=int,
+        type=validate_frames,
         default=6,
         metavar="N",
         help="Number of frames to extract (default: 6)",
@@ -187,7 +222,7 @@ Tip: Copy a GIF, run 'v2i', then drag frames into Claude Code!
     parser.add_argument(
         "-s",
         "--max-size",
-        type=int,
+        type=validate_max_size,
         default=1024,
         metavar="PX",
         help="Max dimension in pixels (default: 1024)",
@@ -205,7 +240,7 @@ Tip: Copy a GIF, run 'v2i', then drag frames into Claude Code!
     parser.add_argument(
         "-q",
         "--quality",
-        type=int,
+        type=validate_quality,
         default=80,
         metavar="N",
         help="JPEG/WebP quality 1-100 (default: 80)",
